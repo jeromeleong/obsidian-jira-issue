@@ -8,7 +8,7 @@ import { SettingsData } from "../settings"
 import RC from "./renderingCommon"
 import escapeStringRegexp from 'escape-string-regexp'
 import { getAccountByHost } from "../utils"
-import { COMPACT_SYMBOL, JIRA_KEY_REGEX } from "../interfaces/settingsInterfaces"
+import { COMPACT_SYMBOL, STATUS_ONLY_SYMBOL, JIRA_KEY_REGEX } from "../interfaces/settingsInterfaces"
 
 interface IMatchDecoratorRef {
     ref: MatchDecorator
@@ -32,12 +32,14 @@ const isSelectionContainsTag = (view: EditorView, start: number, length: number)
 class InlineIssueWidget extends WidgetType {
     private _issueKey: string
     private _compact: boolean
+    private _statusOnly: boolean
     private _host: string
     private _htmlContainer: HTMLElement
-    constructor(key: string, compact: boolean, host: string = null) {
+    constructor(key: string, compact: boolean, statusOnly: boolean = false, host: string = null) {
         super()
         this._issueKey = key
         this._compact = compact
+        this._statusOnly = statusOnly
         this._host = host
         this._htmlContainer = createSpan({ cls: 'ji-inline-issue jira-issue-container' })
         this.buildTag()
@@ -49,13 +51,21 @@ class InlineIssueWidget extends WidgetType {
             if (cachedIssue.isError) {
                 this._htmlContainer.replaceChildren(RC.renderIssueError(this._issueKey, cachedIssue.data as string))
             } else {
-                this._htmlContainer.replaceChildren(RC.renderIssue(cachedIssue.data as IJiraIssue, this._compact))
+                if (this._statusOnly) {
+                    this._htmlContainer.replaceChildren(RC.renderIssueStatusOnly(cachedIssue.data as IJiraIssue, true))
+                } else {
+                    this._htmlContainer.replaceChildren(RC.renderIssue(cachedIssue.data as IJiraIssue, this._compact, true))
+                }
             }
         } else {
-            this._htmlContainer.replaceChildren(RC.renderLoadingItem(this._issueKey))
+            this._htmlContainer.replaceChildren(RC.renderLoadingItem(this._issueKey, true))
             JiraClient.getIssue(this._issueKey, { account: getAccountByHost(this._host) }).then(newIssue => {
                 const issue = ObjectsCache.add(this._issueKey, newIssue).data as IJiraIssue
-                this._htmlContainer.replaceChildren(RC.renderIssue(issue, this._compact))
+                if (this._statusOnly) {
+                    this._htmlContainer.replaceChildren(RC.renderIssueStatusOnly(issue, true))
+                } else {
+                    this._htmlContainer.replaceChildren(RC.renderIssue(issue, this._compact, true))
+                }
             }).catch(err => {
                 ObjectsCache.add(this._issueKey, err, true)
                 this._htmlContainer.replaceChildren(RC.renderIssueError(this._issueKey, err))
@@ -75,9 +85,10 @@ let jiraUrlMatchDecorator: IMatchDecoratorRef = { ref: null }
 function buildMatchDecorators() {
     if (SettingsData.inlineIssuePrefix !== '') {
         jiraTagMatchDecorator.ref = new MatchDecorator({
-            regexp: new RegExp(`${SettingsData.inlineIssuePrefix}(${COMPACT_SYMBOL}?)(${JIRA_KEY_REGEX})`, 'g'),
+            regexp: new RegExp(`${SettingsData.inlineIssuePrefix}(${STATUS_ONLY_SYMBOL}|${COMPACT_SYMBOL})?(${JIRA_KEY_REGEX})`, 'g'),
             decoration: (match: RegExpExecArray, view: EditorView, pos: number) => {
-                const compact = !!match[1]
+                const compact = match[1] === COMPACT_SYMBOL
+                const statusOnly = match[1] === STATUS_ONLY_SYMBOL
                 const key = match[2]
                 const tagLength = match[0].length
                 if (!isEditorInLivePreviewMode(view) || isCursorInsideTag(view, pos, tagLength) || isSelectionContainsTag(view, pos, tagLength)) {
@@ -87,7 +98,7 @@ function buildMatchDecorators() {
                     })
                 } else {
                     return Decoration.replace({
-                        widget: new InlineIssueWidget(key, compact),
+                        widget: new InlineIssueWidget(key, compact, statusOnly),
                     })
                 }
             }
@@ -113,7 +124,7 @@ function buildMatchDecorators() {
                     })
                 } else {
                     return Decoration.replace({
-                        widget: new InlineIssueWidget(key, compact, host),
+                        widget: new InlineIssueWidget(key, compact, false, host),
                     })
                 }
             }

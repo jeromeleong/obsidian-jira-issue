@@ -1,7 +1,7 @@
 import { MarkdownPostProcessorContext } from "obsidian"
 import JiraClient from "../client/jiraClient"
 import { IJiraIssue } from "../interfaces/issueInterfaces"
-import { COMPACT_SYMBOL, JIRA_KEY_REGEX } from "../interfaces/settingsInterfaces"
+import { COMPACT_SYMBOL, STATUS_ONLY_SYMBOL, JIRA_KEY_REGEX } from "../interfaces/settingsInterfaces"
 import ObjectsCache from "../objectsCache"
 import { SettingsData } from "../settings"
 import RC from "./renderingCommon"
@@ -11,10 +11,10 @@ import RC from "./renderingCommon"
 function convertInlineIssuesToTags(el: HTMLElement): void {
     if (SettingsData.inlineIssuePrefix) {
         let match
-        while (match = new RegExp(`${SettingsData.inlineIssuePrefix}(${COMPACT_SYMBOL}?|--)(${JIRA_KEY_REGEX})`).exec(el.innerHTML)) {
+        while (match = new RegExp(`${SettingsData.inlineIssuePrefix}(${STATUS_ONLY_SYMBOL}|${COMPACT_SYMBOL})?(${JIRA_KEY_REGEX})`).exec(el.innerHTML)) {
             // console.log({ match })
             const compact = match[1] === COMPACT_SYMBOL
-            const statusOnly = match[1] === '--'
+            const statusOnly = match[1] === STATUS_ONLY_SYMBOL
             const issueKey = match[2]
             const container = createSpan({ cls: 'ji-inline-issue jira-issue-container', attr: { 'data-issue-key': issueKey, 'data-compact': compact, 'data-status-only': statusOnly } })
             container.appendChild(RC.renderLoadingItem(issueKey, true))
@@ -54,9 +54,9 @@ export const InlineIssueRenderer = async (el: HTMLElement, ctx: MarkdownPostProc
                 value.replaceChildren(RC.renderIssueError(issueKey, cachedIssue.data as string))
             } else {
                 if (statusOnly) {
-                    value.replaceChildren(RC.renderIssueStatusOnly(cachedIssue.data as IJiraIssue))
+                    value.replaceChildren(RC.renderIssueStatusOnly(cachedIssue.data as IJiraIssue, true))
                 } else {
-                    value.replaceChildren(RC.renderIssue(cachedIssue.data as IJiraIssue, compact))
+                    value.replaceChildren(RC.renderIssue(cachedIssue.data as IJiraIssue, compact, true))
                 }
             }
         } else {
@@ -64,9 +64,9 @@ export const InlineIssueRenderer = async (el: HTMLElement, ctx: MarkdownPostProc
             JiraClient.getIssue(issueKey).then(newIssue => {
                 const issue = ObjectsCache.add(issueKey, newIssue).data as IJiraIssue
                 if (statusOnly) {
-                    value.replaceChildren(RC.renderIssueStatusOnly(issue))
+                    value.replaceChildren(RC.renderIssueStatusOnly(issue, true))
                 } else {
-                    value.replaceChildren(RC.renderIssue(issue, compact))
+                    value.replaceChildren(RC.renderIssue(issue, compact, true))
                 }
             }).catch(err => {
                 ObjectsCache.add(issueKey, err, true)

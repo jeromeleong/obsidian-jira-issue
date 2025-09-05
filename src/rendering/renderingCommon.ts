@@ -120,8 +120,13 @@ export default {
         el.replaceChildren(this.renderContainer([tagsRow]))
     },
 
-    renderIssue(issue: IJiraIssue, compact = false): HTMLElement {
-        const tagsRow = createDiv('ji-tags has-addons')
+    renderIssue(issue: IJiraIssue, compact = false, inline = false): HTMLElement {
+        let tagsRow
+        if (inline) {
+            tagsRow = createSpan({ cls: 'ji-tags has-addons' })
+        } else {
+            tagsRow = createDiv({ cls: 'ji-tags has-addons' })
+        }
         this.renderAccountColorBand(issue.account, tagsRow)
         if (issue.fields.issuetype.iconUrl) {
             createEl('img', {
@@ -142,8 +147,13 @@ export default {
         return tagsRow
     },
 
-    renderIssueStatusOnly(issue: IJiraIssue): HTMLElement {
-        const tagsRow = createDiv('ji-tags has-addons')
+    renderIssueStatusOnly(issue: IJiraIssue, inline = false): HTMLElement {
+        let tagsRow
+        if (inline) {
+            tagsRow = createSpan({ cls: 'ji-tags has-addons' })
+        } else {
+            tagsRow = createDiv({ cls: 'ji-tags has-addons' })
+        }
         this.renderAccountColorBand(issue.account, tagsRow)
         const statusColor = JIRA_STATUS_COLOR_MAP_BY_NAME[issue.fields.status.name] ||
             JIRA_STATUS_COLOR_MAP[issue.fields.status.statusCategory.colorName] ||
