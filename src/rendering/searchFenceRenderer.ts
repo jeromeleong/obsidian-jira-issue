@@ -82,7 +82,8 @@ function getAccountBandStyle(account: IJiraIssueAccountSettings): string {
 
 function renderSearchFooter(rootEl: HTMLElement, searchView: SearchView, searchResults: IJiraSearchResults): HTMLElement {
     const searchFooter = createDiv({ cls: 'search-footer' })
-    const searchCount = `Total results: ${searchResults.total.toString()} - ${searchResults.account.alias}`
+    const total = searchResults.total ?? searchResults.issues?.length ?? 0
+    const searchCount = `Total results: ${total.toString()} - ${searchResults.account.alias}`
 
     if(SettingsData.showJiraLink) {
         createEl('a', {

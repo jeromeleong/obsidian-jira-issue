@@ -11,11 +11,12 @@ import RC from "./renderingCommon"
 function convertInlineIssuesToTags(el: HTMLElement): void {
     if (SettingsData.inlineIssuePrefix) {
         let match
-        while (match = new RegExp(`${SettingsData.inlineIssuePrefix}(${COMPACT_SYMBOL}?)(${JIRA_KEY_REGEX})`).exec(el.innerHTML)) {
+        while (match = new RegExp(`${SettingsData.inlineIssuePrefix}(${COMPACT_SYMBOL}?|--)(${JIRA_KEY_REGEX})`).exec(el.innerHTML)) {
             // console.log({ match })
-            const compact = !!match[1]
+            const compact = match[1] === COMPACT_SYMBOL
+            const statusOnly = match[1] === '--'
             const issueKey = match[2]
-            const container = createSpan({ cls: 'ji-inline-issue jira-issue-container', attr: { 'data-issue-key': issueKey, 'data-compact': compact } })
+            const container = createSpan({ cls: 'ji-inline-issue jira-issue-container', attr: { 'data-issue-key': issueKey, 'data-compact': compact, 'data-status-only': statusOnly } })
             container.appendChild(RC.renderLoadingItem(issueKey, true))
             el.innerHTML = el.innerHTML.replace(match[0], container.outerHTML)
         }
@@ -46,18 +47,27 @@ export const InlineIssueRenderer = async (el: HTMLElement, ctx: MarkdownPostProc
     inlineIssueTags.forEach((value: HTMLSpanElement) => {
         const issueKey = value.getAttribute('data-issue-key')
         const compact = value.getAttribute('data-compact') === 'true'
+        const statusOnly = value.getAttribute('data-status-only') === 'true'
         const cachedIssue = ObjectsCache.get(issueKey)
         if (cachedIssue) {
             if (cachedIssue.isError) {
                 value.replaceChildren(RC.renderIssueError(issueKey, cachedIssue.data as string))
             } else {
-                value.replaceChildren(RC.renderIssue(cachedIssue.data as IJiraIssue, compact))
+                if (statusOnly) {
+                    value.replaceChildren(RC.renderIssueStatusOnly(cachedIssue.data as IJiraIssue))
+                } else {
+                    value.replaceChildren(RC.renderIssue(cachedIssue.data as IJiraIssue, compact))
+                }
             }
         } else {
             value.replaceChildren(RC.renderLoadingItem(issueKey))
             JiraClient.getIssue(issueKey).then(newIssue => {
                 const issue = ObjectsCache.add(issueKey, newIssue).data as IJiraIssue
-                value.replaceChildren(RC.renderIssue(issue, compact))
+                if (statusOnly) {
+                    value.replaceChildren(RC.renderIssueStatusOnly(issue))
+                } else {
+                    value.replaceChildren(RC.renderIssue(issue, compact))
+                }
             }).catch(err => {
                 ObjectsCache.add(issueKey, err, true)
                 value.replaceChildren(RC.renderIssueError(issueKey, err))

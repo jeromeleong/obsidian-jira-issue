@@ -108,9 +108,12 @@ export interface IJiraUser {
 
 export interface IJiraSearchResults {
     issues: IJiraIssue[]
-    maxResults: number
-    startAt: number
-    total: number
+    maxResults?: number
+    startAt?: number
+    total?: number
+    nextPageToken?: string
+    isLast?: boolean
+    expand?: string
     account: IJiraIssueAccountSettings
 }
 

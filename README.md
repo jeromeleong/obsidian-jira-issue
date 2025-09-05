@@ -76,9 +76,11 @@ The plugin will detect urls like https://jira.secondlife.com/browse/OPEN-352 and
 - [ ] Issue can be extended JIRA:OPEN-353 with the summary
 - [x] Or compact JIRA:-OPEN-354 without the summary
 - [ ] JIRA:-OPEN-355 use the `-` symbol before the issue key to make it compact
+- [ ] JIRA:--OPEN-356 use `--` symbol to show only the status
 ```
 The plugin searches inside the note for those patterns and replace them
-JIRA:-OPEN-356
+JIRA:-OPEN-356 (compact mode)
+JIRA:--OPEN-357 (status only mode)
 ```
 ````
 ![Inline issues](./assets/inlineIssues.png)

@@ -142,6 +142,16 @@ export default {
         return tagsRow
     },
 
+    renderIssueStatusOnly(issue: IJiraIssue): HTMLElement {
+        const tagsRow = createDiv('ji-tags has-addons')
+        this.renderAccountColorBand(issue.account, tagsRow)
+        const statusColor = JIRA_STATUS_COLOR_MAP_BY_NAME[issue.fields.status.name] ||
+            JIRA_STATUS_COLOR_MAP[issue.fields.status.statusCategory.colorName] ||
+            'is-light'
+        createSpan({ cls: `ji-tag no-wrap ${statusColor}`, text: issue.fields.status.name, title: `${issue.key}: ${issue.fields.status.description}`, attr: { 'data-status': issue.fields.status.name }, parent: tagsRow })
+        return tagsRow
+    },
+
     renderIssueError(issueKey: string, message: string): HTMLElement {
         const tagsRow = createDiv('ji-tags has-addons')
         createSpan({ cls: 'ji-tag is-delete is-danger', parent: tagsRow })
