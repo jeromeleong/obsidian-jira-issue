@@ -28,6 +28,10 @@ export async function getSearchResults(query: string, options: { limit?: number,
     return cacheWrapper(JiraClient.getSearchResults)(query, options)
 }
 
+export async function getSearchResultsCount(query: string, options: { account?: IJiraIssueAccountSettings } = {}): Promise<number> {
+    return cacheWrapper(JiraClient.getSearchResultsCount)(query, options)
+}
+
 export async function getDevStatus(issueId: string, options: { account?: IJiraIssueAccountSettings } = {}): Promise<IJiraDevStatus> {
     return cacheWrapper(JiraClient.getDevStatus)(issueId, options)
 }

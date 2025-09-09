@@ -223,6 +223,46 @@ export default {
         return searchResults
     },
 
+    async getSearchResultsCount(query: string, options: { account?: IJiraIssueAccountSettings } = {}): Promise<number> {
+        const opt = {
+            account: options.account || null,
+        }
+        
+        let total = 0
+        let startAt = 0
+        let isLast = false
+        
+        while (!isLast) {
+            const queryParameters = new URLSearchParams({
+                jql: query,
+                fields: 'key', // 只獲取key字段以提高性能
+                startAt: startAt.toString(),
+                maxResults: '1000', // 使用大的分頁大小
+            })
+            
+            const searchResults = await sendRequest(
+                {
+                    method: 'GET',
+                    path: `/search/jql`,
+                    queryParameters: queryParameters,
+                    account: opt.account,
+                }
+            ) as IJiraSearchResults
+            
+            total += searchResults.issues.length
+            isLast = searchResults.isLast !== false // 如果isLast不存在或為true，則停止
+            startAt += searchResults.issues.length
+            
+            // 安全檢查：避免無限循環
+            if (startAt > 100000) {
+                console.warn('JiraClient.getSearchResultsCount: 達到最大搜索限制')
+                break
+            }
+        }
+        
+        return total
+    },
+
     async updateStatusColorCache(status: string, account: IJiraIssueAccountSettings): Promise<void> {
         if (status in account.cache.statusColor) {
             return
